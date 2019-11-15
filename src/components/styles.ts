@@ -13,6 +13,9 @@ export const FieldWrapper = Styled.div`
     .subtitle {
         font-size: 14px;
     }
+    .title {
+        font-size: 34px;
+    }
 `;
 
 export const SliderContainer = Styled.div`

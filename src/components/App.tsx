@@ -174,6 +174,7 @@ export default class App extends React.PureComponent<any, any> {
                                                 <StyledInput
                                                     min='0'
                                                     type="number"
+                                                    step="any"
                                                     max={Wallet[currency].amount}
                                                     value={fromValue}
                                                     onChange={this.onFromValueUpdate}
@@ -204,7 +205,7 @@ export default class App extends React.PureComponent<any, any> {
                                         {
                                             !loading ? (
                                                 <div>
-                                                    <h2>{getExchangedRate(fromValue, exchangeRate)}</h2>
+                                                    <h2 className='title'>{getExchangedRate(fromValue, exchangeRate)}</h2>
                                                 </div>
                                             ) : null
                                         }
