@@ -1,3 +1,3 @@
-export const getExchangedRate = (amount: string, exchangerate: number) => {
-    return amount ? (parseFloat(amount) * exchangerate).toFixed(2) : 0
+export const getExchangedRate = (amount: string, exchangerate: number): string => {
+    return amount ? (parseFloat(amount) * exchangerate).toFixed(2) : '0'
 }

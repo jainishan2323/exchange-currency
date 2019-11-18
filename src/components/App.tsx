@@ -1,4 +1,5 @@
 import React from 'react';
+import { connect, Dispatch } from 'react-redux';
 import idx from 'idx';
 import Slider from 'react-slick';
 
@@ -7,30 +8,12 @@ import {
     FieldWrapper,
     SliderContainer,
     StyledInput,
+    StyledSubmitButton,
+    StyledMessage,
 } from './styles';
 
 import { getExchangedRate } from './utils';
-
-const Wallet = {
-    "GBP" :{
-        id: "GBP",
-        displayName: "British Pound",
-        amount: 200,
-        symbol: "£",
-    },
-    "USD": {
-        id: "USD",
-        displayName: "US Dollar",
-        amount: 200,
-        symbol: "$",
-    },
-    "EUR": {
-        id: "EUR",
-        displayName: "Euro",
-        amount: 200,
-        symbol: "€"
-    }
-};
+import { IAppState, IWallet } from '../types';
 
 const sliderSettings = {
     dots: true,
@@ -40,26 +23,43 @@ const sliderSettings = {
     slidesToScroll: 1
 };
 
-export default class App extends React.PureComponent<any, any> {
+interface IProps {
+    dispatch: Dispatch<any>;
+    Wallet: IWallet;
+}
+
+interface IState {
+    fromCurrency: string;
+    fromAmount: string | number;
+    toCurrency: string;
+    loading: boolean;
+    exchangeRate: any;
+    message: string;
+    error: boolean;
+}
+
+class App extends React.PureComponent<IProps, IState> {
     public toSliderRef: React.RefObject<HTMLDivElement> = React.createRef(); 
     public inputRef: React.RefObject<HTMLInputElement> = React.createRef();
+    public timer = null;
+    private pollInterval = 10000;
 
     public state = {
         fromCurrency: 'GBP',
-        fromValue: '',
-        toValue: '',
+        fromAmount: '',
         toCurrency: 'GBP',
         loading: false,
         exchangeRate: 1,
+        message: '',
+        error: false,
     }
 
     componentDidMount() {
-        // this.timer = setInterval(() => this.fetchCurrency(), 1000);
-        this.fetchCurrency();
+        this.timer = setInterval(() => this.fetchCurrency(), this.pollInterval);
     }
 
     componentWillUnmount() {
-        // this.timer = null;
+        this.timer = null;
     }
 
     fetchCurrency() {
@@ -76,53 +76,82 @@ export default class App extends React.PureComponent<any, any> {
             return;
         }
 
-        fetch(`https://api.exchangeratesapi.io/latest?symbols=${toCurrency}&base=${fromCurrency}`)
+        fetch(`https://api.exchangeratesapi.io/latest?symbols=${toCurrency}&base=${fromCurrency}`, {
+            cache: 'no-cache',
+        })
         .then((result) => result.json())
         .then((data) => {
             const rate = idx(data, _ => _.rates[toCurrency]);
             this.setState({
                 loading: false,
                 exchangeRate: rate,
+                message: '',
+                error: false,
             })
         }).catch((err) => {
             this.setState({
                 loading: true,
+                message: 'Unable to fetch exchange rate, please refresh.',
+                error: true,
             })
         })
     }
 
-    public onSubmit = (e: React.FormEvent<HTMLInputElement>) => {
+    public onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const {
+            Wallet,
+            dispatch,
+        } = this.props;
+        const {
             fromCurrency,
-            fromValue,
-            toValue,
+            exchangeRate,
+            fromAmount,
             toCurrency,
+            loading,
         } = this.state;
-        if (!fromValue || !toValue) {
+        if (loading || !fromAmount || !exchangeRate) {
             return;
         }
-        if (fromValue > Wallet[fromCurrency].amount) {
-            // insufficent funds
+
+        if (fromCurrency === toCurrency) {
             return;
         }
-        console.log(`Credited ${Wallet[toCurrency].symbol} ${toValue} into account`)
+        if (fromAmount > Wallet[fromCurrency].amount) {
+            this.setState({
+                message: 'Insufficent funds',
+                error: true,
+            });
+            return;
+        }
+
+        const toAmount = parseFloat(getExchangedRate(fromAmount, exchangeRate));
+
+        dispatch({ type: "COMPUTE_BALANCE", fromCurrency, toCurrency, fromAmount, toAmount });
+        this.setState({
+            message: 'Amount exchange success.',
+            error: false,
+        });
+        console.log(`Credited ${Wallet[toCurrency].symbol} ${toAmount} into account`)
     }
 
-    public onFromValueUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
+    public onfromAmountUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { value } = e.target
         if (value) {
             this.setState((_prevState) => ({
-                fromValue: parseFloat(value)
+                fromAmount: parseFloat(value)
             }));
         } else {
             this.setState({
-                fromValue: '',
+                fromAmount: '',
             })
         }
     }
 
     public onFromCurrencyChange = (currentSlide: number) => {
+        const {
+            Wallet
+        } = this.props;
         if (currentSlide !== undefined) {
             const slideId = Object.keys(Wallet)[currentSlide];
             this.setState(() => ({
@@ -133,7 +162,9 @@ export default class App extends React.PureComponent<any, any> {
     }
 
     public onToCurrencyChange = (currentSlide: number) => {
-
+        const {
+            Wallet
+        } = this.props;
         if (currentSlide !== undefined) {
             const slideId = Object.keys(Wallet)[currentSlide];
             this.setState(() => ({
@@ -145,9 +176,16 @@ export default class App extends React.PureComponent<any, any> {
 
     public render() {
         const {
-            fromValue,
+            Wallet
+        } = this.props;
+        const {
+            fromAmount,
             loading,
-            exchangeRate
+            exchangeRate,
+            toCurrency,
+            fromCurrency,
+            error,
+            message,
         } = this.state;
         return (
             <AppWrapper>
@@ -162,22 +200,22 @@ export default class App extends React.PureComponent<any, any> {
                                 <div key={currency}>
                                     <FieldWrapper>
                                         <div>
-                                            <h2>{Wallet[currency].id}</h2>
+                                            <h2 className='title'>{Wallet[currency].id}</h2>
                                             <p className='subtitle'>
                                                 You have &nbsp;
                                                 {Wallet[currency].symbol}
-                                                {Wallet[currency].amount}
+                                                {Wallet[currency].amount.toFixed(2)}
                                             </p>
                                         </div>
                                         <div>
-                                            <form>
+                                            <form onSubmit={this.onSubmit} id="submitForm">
                                                 <StyledInput
                                                     min='0'
                                                     type="number"
                                                     step="any"
                                                     max={Wallet[currency].amount}
-                                                    value={fromValue}
-                                                    onChange={this.onFromValueUpdate}
+                                                    value={fromAmount}
+                                                    onChange={this.onfromAmountUpdate}
                                                     ref={this.inputRef}
                                                 />
                                             </form>
@@ -195,17 +233,25 @@ export default class App extends React.PureComponent<any, any> {
                                 <div key={currency}>
                                     <FieldWrapper>
                                         <div>
-                                            <h2>{Wallet[currency].id}</h2>
+                                            <h2 className='title'>{Wallet[currency].id}</h2>
                                             <p className='subtitle'>
                                                 You have &nbsp;
                                                 {Wallet[currency].symbol}
-                                                {Wallet[currency].amount}
+                                                {Wallet[currency].amount.toFixed(2)}
                                             </p>
                                         </div>
                                         {
                                             !loading ? (
                                                 <div>
-                                                    <h2 className='title'>{getExchangedRate(fromValue, exchangeRate)}</h2>
+                                                    <h2 className='title'>
+                                                        {getExchangedRate(fromAmount, exchangeRate)}
+                                                    </h2>
+                                                    <p className='subtitle'>
+                                                        {Wallet[toCurrency].symbol}1 =
+                                                        &nbsp;
+                                                        {Wallet[fromCurrency].symbol}
+                                                        {(1/exchangeRate).toFixed(2)}
+                                                    </p>
                                                 </div>
                                             ) : null
                                         }
@@ -215,7 +261,15 @@ export default class App extends React.PureComponent<any, any> {
                         }
                     </Slider>
                 </SliderContainer>
+                <StyledSubmitButton disabled={fromCurrency === toCurrency} type="submit" form="submitForm" value="Exchange" />
+                <StyledMessage error={error}>{message}</StyledMessage>
             </AppWrapper>
         )
     }
 }
+
+const mapStateToProps = (state: IAppState) => ({
+    Wallet: state.Wallet
+});
+
+export default connect(mapStateToProps)(App);
