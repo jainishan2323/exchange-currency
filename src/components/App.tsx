@@ -12,7 +12,7 @@ import {
     StyledMessage,
 } from './styles';
 
-import { getExchangedRate } from './utils';
+import { getExchangedRate } from '../utils';
 import { IAppState, IWallet } from '../types';
 
 const sliderSettings = {
@@ -55,6 +55,7 @@ class App extends React.PureComponent<IProps, IState> {
     }
 
     componentDidMount() {
+        // polls the request for every Interval
         this.timer = setInterval(() => this.fetchCurrency(), this.pollInterval);
     }
 
@@ -128,11 +129,11 @@ class App extends React.PureComponent<IProps, IState> {
         const toAmount = parseFloat(getExchangedRate(fromAmount, exchangeRate));
 
         dispatch({ type: "COMPUTE_BALANCE", fromCurrency, toCurrency, fromAmount, toAmount });
+
         this.setState({
             message: 'Amount exchange success.',
             error: false,
         });
-        console.log(`Credited ${Wallet[toCurrency].symbol} ${toAmount} into account`)
     }
 
     public onfromAmountUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,6 +150,7 @@ class App extends React.PureComponent<IProps, IState> {
     }
 
     public onFromCurrencyChange = (currentSlide: number) => {
+        // triggers on slide change updates state with currency in context
         const {
             Wallet
         } = this.props;
