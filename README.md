@@ -2,6 +2,9 @@
 
 A currency exchange widget built on ReactJS
 
+<img width="411" alt="Screenshot 2019-11-18 at 7 43 09 PM" src="https://user-images.githubusercontent.com/19609136/69059505-ad982900-0a3b-11ea-8635-f3e5eac972c1.png">
+
+
 ## Getting Started
 Step 1: Clone the project
 
@@ -35,6 +38,8 @@ Project use [Jest](https://jestjs.io/) for testing. To test run
 npm run test -- --coverage
 
 ```
+<img width="727" alt="Screenshot 2019-11-18 at 4 53 51 PM" src="https://user-images.githubusercontent.com/19609136/69059403-788bd680-0a3b-11ea-8485-7bf48e97d827.png">
+
 
 ## API used
 https://exchangeratesapi.io/
