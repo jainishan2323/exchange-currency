@@ -22,6 +22,8 @@ npm start
 
 ```
 
+Step 4: Navigate to http://ocalhost:8080
+
 ## Built With
 
 * [React](https://reactjs.org/) - React JS for client
