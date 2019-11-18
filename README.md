@@ -22,7 +22,7 @@ npm start
 
 ```
 
-Step 4: Navigate to http://ocalhost:8080
+Step 4: Navigate to http://localhost:8080
 
 ## Built With
 
